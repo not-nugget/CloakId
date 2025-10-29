@@ -154,9 +154,14 @@ The `[Cloak]` attribute can be applied to the following numeric property types:
 - `int` and `int?`
 - `uint` and `uint?`
 - `long` and `long?`
+- `byte` and `byte?`
 - `ulong` and `ulong?`
+- `sbyte` and `sbyte?`
 - `short` and `short?`
 - `ushort` and `ushort?`
+
+The `[Cloak]` attribute can also target all of the aforementioned numeric properties
+when part of an enumerable collection, including (but not limited to) `byte[]` or `IEnumerable<short>`.
 
 ## Direct Codec Usage
 

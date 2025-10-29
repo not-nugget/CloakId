@@ -1,5 +1,7 @@
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using CloakId.Abstractions;
 
@@ -10,6 +12,12 @@ namespace CloakId;
 /// </summary>
 public class CloakIdTypeInfoResolver(ICloakIdCodec codec) : DefaultJsonTypeInfoResolver
 {
+    private static readonly Type _openConverter = typeof(CloakIdPropertyConverter<>);
+    private static readonly Type _openNullableConverter = typeof(NullableCloakIdPropertyConverter<>);
+    private static readonly Type _openNullable = typeof(Nullable<>);
+
+    private readonly ICloakIdCodec _codec = codec;
+
     /// <summary>
     /// Gets the type information for the specified type, adding CloakId custom converters for properties marked with [Cloak].
     /// </summary>
@@ -22,30 +30,36 @@ public class CloakIdTypeInfoResolver(ICloakIdCodec codec) : DefaultJsonTypeInfoR
 
         if (jsonTypeInfo.Kind == JsonTypeInfoKind.Object)
         {
+            Dictionary<Type, JsonConverter> converterCache = [];
+            object[] ctorArr = [ _codec ];
             foreach (var propertyInfo in jsonTypeInfo.Properties)
             {
                 var propertyType = propertyInfo.PropertyType;
                 var property = type.GetProperty(propertyInfo.Name, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
                 if (property?.GetCustomAttribute<CloakAttribute>() != null &&
-                    IsNumericType(propertyType))
+                    propertyType.IsNumericType())
                 {
-                    propertyInfo.CustomConverter = new CloakIdPropertyConverter(propertyType, codec);
+                    var converter = CollectionsMarshal.GetValueRefOrAddDefault(converterCache, propertyType, out var exists);
+                    if (exists)
+                    {
+                        propertyInfo.CustomConverter = converter;
+                        continue;
+                    }
+
+                    if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == _openNullable)
+                    {
+                        converter = (JsonConverter)Activator.CreateInstance(_openNullableConverter.MakeGenericType(Nullable.GetUnderlyingType(propertyType)!), ctorArr)!;
+                        propertyInfo.CustomConverter = converter;
+                        continue;
+                    }
+
+                    converter = (JsonConverter)Activator.CreateInstance(_openConverter.MakeGenericType(propertyType), ctorArr)!;
+                    propertyInfo.CustomConverter = converter;
                 }
             }
         }
 
         return jsonTypeInfo;
-    }
-
-    private static bool IsNumericType(Type type)
-    {
-        var actualType = Nullable.GetUnderlyingType(type) ?? type;
-        return actualType == typeof(int) ||
-               actualType == typeof(uint) ||
-               actualType == typeof(long) ||
-               actualType == typeof(ulong) ||
-               actualType == typeof(short) ||
-               actualType == typeof(ushort);
     }
 }

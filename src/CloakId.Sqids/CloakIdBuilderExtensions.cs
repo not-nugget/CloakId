@@ -26,6 +26,7 @@ public static class CloakIdBuilderExtensions
     {
         if (builder.HasCodecConfigured)
         {
+            // TODO this restriction can be circumvented via Keyed Services
             throw new InvalidOperationException(
                 "A codec has already been configured for this CloakId builder. " +
                 "You cannot call WithSqids() after another codec configuration method has been called. " +
@@ -37,65 +38,20 @@ public static class CloakIdBuilderExtensions
         configureOptions?.Invoke(options);
 
         // Register Sqids encoders for different numeric types
-        builder.Services.AddSingleton(provider =>
+        var sqidsOptions = new SqidsOptions
         {
-            var sqidsOptions = new SqidsOptions
-            {
-                MinLength = options.MinLength
-            };
-            if (options.Alphabet != null) sqidsOptions.Alphabet = options.Alphabet;
-            return new SqidsEncoder<int>(sqidsOptions);
-        });
+            MinLength = options.MinLength
+        };
+        if (options.Alphabet != null) sqidsOptions.Alphabet = options.Alphabet;
 
-        builder.Services.AddSingleton(provider =>
-        {
-            var sqidsOptions = new SqidsOptions
-            {
-                MinLength = options.MinLength
-            };
-            if (options.Alphabet != null) sqidsOptions.Alphabet = options.Alphabet;
-            return new SqidsEncoder<uint>(sqidsOptions);
-        });
-
-        builder.Services.AddSingleton(provider =>
-        {
-            var sqidsOptions = new SqidsOptions
-            {
-                MinLength = options.MinLength
-            };
-            if (options.Alphabet != null) sqidsOptions.Alphabet = options.Alphabet;
-            return new SqidsEncoder<long>(sqidsOptions);
-        });
-
-        builder.Services.AddSingleton(provider =>
-        {
-            var sqidsOptions = new SqidsOptions
-            {
-                MinLength = options.MinLength
-            };
-            if (options.Alphabet != null) sqidsOptions.Alphabet = options.Alphabet;
-            return new SqidsEncoder<ulong>(sqidsOptions);
-        });
-
-        builder.Services.AddSingleton(provider =>
-        {
-            var sqidsOptions = new SqidsOptions
-            {
-                MinLength = options.MinLength
-            };
-            if (options.Alphabet != null) sqidsOptions.Alphabet = options.Alphabet;
-            return new SqidsEncoder<short>(sqidsOptions);
-        });
-
-        builder.Services.AddSingleton(provider =>
-        {
-            var sqidsOptions = new SqidsOptions
-            {
-                MinLength = options.MinLength
-            };
-            if (options.Alphabet != null) sqidsOptions.Alphabet = options.Alphabet;
-            return new SqidsEncoder<ushort>(sqidsOptions);
-        });
+        builder.Services.AddSingleton(provider => new SqidsEncoder<int>(sqidsOptions));
+        builder.Services.AddSingleton(provider => new SqidsEncoder<byte>(sqidsOptions));
+        builder.Services.AddSingleton(provider => new SqidsEncoder<uint>(sqidsOptions));
+        builder.Services.AddSingleton(provider => new SqidsEncoder<long>(sqidsOptions));
+        builder.Services.AddSingleton(provider => new SqidsEncoder<sbyte>(sqidsOptions));
+        builder.Services.AddSingleton(provider => new SqidsEncoder<ulong>(sqidsOptions));
+        builder.Services.AddSingleton(provider => new SqidsEncoder<short>(sqidsOptions));
+        builder.Services.AddSingleton(provider => new SqidsEncoder<ushort>(sqidsOptions));
 
         // Register the SqidsCodec as the ICloakIdCodec
         builder.Services.AddSingleton<ICloakIdCodec, SqidsCodec>();

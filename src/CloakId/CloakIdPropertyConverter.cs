@@ -1,3 +1,5 @@
+using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CloakId.Abstractions;
@@ -7,6 +9,7 @@ namespace CloakId;
 /// <summary>
 /// JSON converter for properties marked with [Cloak].
 /// </summary>
+[Obsolete("Prefer ConcreteCloakIdPropertyConverterFactory for JSON serialization and deserialization")]
 public class CloakIdPropertyConverter(Type propertyType, ICloakIdCodec codec) : JsonConverter<object>
 {
     /// <summary>
@@ -48,6 +51,44 @@ public class CloakIdPropertyConverter(Type propertyType, ICloakIdCodec codec) : 
         }
 
         var encoded = codec.Encode(value, propertyType);
+        writer.WriteStringValue(encoded);
+    }
+}
+
+/// <summary>
+/// Concrete JSON Converter for properties marked with [Cloak]
+/// </summary>
+/// <typeparam name="T">Target <see cref="IBinaryInteger{TSelf}"/> of the attributed property.</typeparam>
+public sealed class CloakIdPropertyConverter<T>(ICloakIdCodec codec) : JsonConverter<T> where T : IBinaryInteger<T>, IMinMaxValue<T>
+{
+    private readonly ICloakIdCodec _codec = codec;
+
+    public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.Null)
+        {
+            if (Nullable.GetUnderlyingType(typeof(T)) != null) return default;
+            throw new JsonException($"Cannot convert null to non-nullable type {typeof(T)}");
+        }
+
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            var encodedValue = reader.GetString()!;
+            return _codec.Decode<T>(encodedValue);
+        }
+
+        throw new JsonException($"Expected string token for CloakId property of type {typeof(T)}, but got {reader.TokenType}");
+    }
+
+    public override void Write(Utf8JsonWriter writer, T? value, JsonSerializerOptions options)
+    {
+        if (value is null)
+        {
+            writer.WriteNullValue();
+            return;
+        }
+
+        var encoded = _codec.Encode(value);
         writer.WriteStringValue(encoded);
     }
 }

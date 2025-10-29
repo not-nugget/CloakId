@@ -23,7 +23,7 @@ public class CloakIdModelBinder(ICloakIdCodec codec, IOptions<CloakIdAspNetCoreO
         var underlyingType = Nullable.GetUnderlyingType(modelType) ?? modelType;
 
         // Check if this is a numeric type that could be cloaked
-        if (!IsNumericType(underlyingType)) return Task.CompletedTask;
+        if (!underlyingType.IsNumericType()) return Task.CompletedTask;
 
         var value = bindingContext.ValueProvider.GetValue(bindingContext.ModelName);
         if (value == ValueProviderResult.None) return Task.CompletedTask;
@@ -55,15 +55,5 @@ public class CloakIdModelBinder(ICloakIdCodec codec, IOptions<CloakIdAspNetCoreO
         }
 
         return Task.CompletedTask;
-    }
-
-    private static bool IsNumericType(Type type)
-    {
-        return type == typeof(int) ||
-               type == typeof(uint) ||
-               type == typeof(long) ||
-               type == typeof(ulong) ||
-               type == typeof(short) ||
-               type == typeof(ushort);
     }
 }

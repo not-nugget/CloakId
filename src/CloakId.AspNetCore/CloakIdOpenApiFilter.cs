@@ -34,7 +34,7 @@ public class CloakIdOpenApiFilter : IOperationFilter
 
             // Check if the parameter has the Cloak attribute
             var cloakAttribute = parameterInfo.GetCustomAttribute<CloakAttribute>();
-            if (cloakAttribute != null && IsNumericType(parameterInfo.ParameterType))
+            if (cloakAttribute != null && parameterInfo.ParameterType.IsNumericType())
             {
                 // Modify the parameter to be a string type in the OpenAPI spec
                 openApiParameter.Schema = new OpenApiSchema
@@ -42,7 +42,7 @@ public class CloakIdOpenApiFilter : IOperationFilter
                     Type = "string",
                     Format = null, // Remove any numeric format
                     Description = openApiParameter.Schema?.Description ??
-                        $"Encoded string representation of a {GetFriendlyTypeName(parameterInfo.ParameterType)} value. " +
+                        $"Encoded string representation of a {parameterInfo.ParameterType.GetFriendlyTypeName()} value. " +
                         "This parameter accepts encoded string values (e.g., 'A6das1') rather than raw numeric values."
                 };
 
@@ -55,43 +55,8 @@ public class CloakIdOpenApiFilter : IOperationFilter
                 // Update extensions to indicate this is a CloakId parameter
                 openApiParameter.Extensions["x-cloakid"] = new Microsoft.OpenApi.Any.OpenApiBoolean(true);
                 openApiParameter.Extensions["x-cloakid-original-type"] =
-                    new Microsoft.OpenApi.Any.OpenApiString(GetFriendlyTypeName(parameterInfo.ParameterType));
+                    new Microsoft.OpenApi.Any.OpenApiString(parameterInfo.ParameterType.GetFriendlyTypeName());
             }
         }
-    }
-
-    private static bool IsNumericType(Type type)
-    {
-        var actualType = Nullable.GetUnderlyingType(type) ?? type;
-        return actualType == typeof(int) ||
-               actualType == typeof(uint) ||
-               actualType == typeof(long) ||
-               actualType == typeof(ulong) ||
-               actualType == typeof(short) ||
-               actualType == typeof(ushort);
-    }
-
-    private static string GetFriendlyTypeName(Type type)
-    {
-        var underlyingType = Nullable.GetUnderlyingType(type);
-        if (underlyingType != null)
-        {
-            return GetSimpleTypeName(underlyingType) + "?";
-        }
-        return GetSimpleTypeName(type);
-    }
-
-    private static string GetSimpleTypeName(Type type)
-    {
-        return type.Name switch
-        {
-            "Int32" => "int",
-            "UInt32" => "uint",
-            "Int64" => "long",
-            "UInt64" => "ulong",
-            "Int16" => "short",
-            "UInt16" => "ushort",
-            _ => type.Name.ToLowerInvariant()
-        };
     }
 }

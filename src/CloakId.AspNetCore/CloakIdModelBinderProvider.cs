@@ -24,7 +24,7 @@ public class CloakIdModelBinderProvider : IModelBinderProvider
         var underlyingType = Nullable.GetUnderlyingType(modelType) ?? modelType;
 
         // Only provide binder for numeric types that CloakId supports
-        if (IsNumericType(underlyingType))
+        if (underlyingType.IsNumericType())
         {
             var codec = context.Services.GetRequiredService<Abstractions.ICloakIdCodec>();
             var options = context.Services.GetRequiredService<IOptions<CloakIdAspNetCoreOptions>>();
@@ -32,15 +32,5 @@ public class CloakIdModelBinderProvider : IModelBinderProvider
         }
 
         return null;
-    }
-
-    private static bool IsNumericType(Type type)
-    {
-        return type == typeof(int) ||
-               type == typeof(uint) ||
-               type == typeof(long) ||
-               type == typeof(ulong) ||
-               type == typeof(short) ||
-               type == typeof(ushort);
     }
 }

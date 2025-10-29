@@ -161,7 +161,7 @@ The `[Cloak]` attribute can be applied to the following numeric property types:
 - `ushort` and `ushort?`
 
 The `[Cloak]` attribute can also target all of the aforementioned numeric properties
-when part of an enumerable collection, including (but not limited to) `byte[]` or `IEnumerable<short>`.
+when part of an enumerable collection, including (but not limited to) `byte[]`, `IEnumerable<short>`, etc..
 
 ## Direct Codec Usage
 
